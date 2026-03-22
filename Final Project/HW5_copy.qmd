@@ -1,0 +1,239 @@
+---
+title: "HW5 Instructions"
+author: "Data Science 2"
+editor: visual
+format:
+  html:
+    embed-resources: true
+    code-fold: true  # new
+execute:
+  echo: true
+  message: false
+  warning: false
+---
+
+# The Office
+
+Let's return to *The Office* and the question of how many times they said "that's what she said". Now we can use n-grams to help us with the searching. Recall that the text is in the [schrute](https://cran.r-project.org/web/packages/schrute/index.html) package on CRAN.
+
+Do the following: (please label each section with the same number as listed here)
+
+1.  Count the number of [lines]{.underline} in which "that's what she said" is said in *The Office* (yes, we discussed this previously)
+2.  Confirm that you get the same result when using `ngram4`, a variable which is an ngram of size 4 (4 words at a time).
+3.  Explore whether "that's what she" included in `ngram4` allows you to determine any additional phrases that should be included.
+4.  Explore whether "what she said" included in `ngram4` allows you to determine any additional phrases that should be included.
+5.  Print all the [unique]{.underline} lines that contain the words "that", "what", "she" and "said", but do NOT contain the string "that's what she said". Decide whether any of these lines should be included as saying "that's what she said".
+6.  Create a frequency distribution of X, where X is determined from the third word in "that's what X said".
+7.  Add a categorical variable to the *original* data that takes a value that equals 0 if it was not identified in your work above, 1 if the line says "that's what she said", otherwise it should say 3 if you identified it from starting with "that's what she", otherwise it should say 4 if you identified it from ending with "what she said", otherwise if should say 5 if you identified it in part 5, otherwise it should say 6 if you identified it in part 6. In part 6, you are welcome to make a judgment call about which third words you want to count as similar to "that's what she said" (but you should clearly state which ones you have chosen).
+8.  Create a frequency distribution of the new variable you created in part 7.
+
+```{r setup, message=FALSE, warning=FALSE}
+#| echo: true
+library(schrute)
+library(tidyverse)
+library(kableExtra)
+library(gt)
+library(tidytext)
+library(ggplot2)
+```
+
+# 1)
+
+33 lines
+
+```{r}
+theoffice |> 
+    pull(text) |> 
+    str_to_lower() |> 
+    str_detect("that's what she said") |> 
+    sum()
+```
+
+# 2)
+
+This also got 35 rows.
+
+```{r}
+ngram4 <- theoffice |> 
+    unnest_tokens(ngram4, text, token = "ngrams", n = 4, drop = FALSE) |> 
+    drop_na(ngram4) |> 
+    select(ngram4, everything())
+
+ngram4 |> 
+    filter(ngram4 == "that's what she said") |> 
+    nrow()
+
+
+# correct
+four_words <- theoffice |> 
+    unnest_tokens(ngram4, text, "ngrams", n = 4, drop = FALSE) |> 
+    drop_na(ngram4) |> 
+    select(ngram4, everything())
+
+four_words |> 
+    filter(ngram4 == "that's what she said") |> 
+    nrow()
+
+```
+
+# 3)
+
+Because of the single occurance of "that's what she sai", I would consider adding that to the count of "that's what she said" because it is either a typo or the character got cutoff. I think it is close enough to be "that's what she said".
+
+```{r}
+ngram4 |> 
+    filter(str_detect(ngram4, "^that's what she"),
+           !str_starts(ngram4, "that's what she said")) |> 
+    count(ngram4, sort = TRUE)
+
+```
+
+# 4)
+
+```{r}
+ngram4 |> 
+    filter(str_detect(ngram4, "what she said")) |> 
+    count(ngram4, sort = TRUE)
+
+# correct
+four_words |> 
+  filter(ngram4 |> str_ends("what she said"),
+         !str_detect(text |> str_to_lower(), "that's what she said"))
+```
+
+# 5)
+
+I don't think any of them should be included.
+
+```{r}
+theoffice |> 
+    filter(str_detect(text, regex("that", ignore_case=TRUE)),
+           str_detect(text, regex("what", ignore_case=TRUE)),
+           str_detect(text, regex("she", ignore_case=TRUE)),
+           str_detect(text, regex("said", ignore_case=TRUE)),
+           !str_detect(text, regex("that's what she said", 
+                                   ignore_case = TRUE))
+           ) |> 
+    distinct(text) |> 
+    pull(text)
+```
+
+# 6)
+
+```{r}
+twxs <- ngram4 |> 
+    filter(str_detect(ngram4, "^that's what .* said$"))
+
+twxs <- twxs |>
+  separate(ngram4, into=c("w1", "w2", "x", "w4"), sep=" ")
+
+freq_x <- twxs |> 
+    count(x, sort=TRUE)
+freq_x
+
+# posners
+four_words |> 
+  filter(str_starts(ngram4, "that's what"),
+         str_ends(ngram4, "said"),
+         ngram4 != "that's what she said") |> 
+  distinct(season, episode, index, ngram4) |> 
+  mutate(word3 = word(ngram4, 3)) |> 
+  count(word3, sort = T)
+```
+
+```{r}
+#| echo: false
+ggplot(freq_x, aes(x = reorder(x, n), y = n,)) +
+    geom_col(fill = "skyblue") +
+    coord_flip() +
+    labs(title = "Frequency of x in 'that's what x said'",
+         x = "X (third word)",
+         y = "Count") + 
+    theme_minimal()
+```
+
+# 7)
+
+```{r}
+# posners code
+four_words |> 
+    mutate(twss = case_when(
+        ngram4 == "that's what she said" ~ 1,
+        ngram4 %in% c("that's what she sai", "that's what she a") ~ 3,
+        str_starts(ngram4, "that's what") &
+            str_ends(ngram4, "said") &
+            word(ngram4, 3) %in% c("he", "who") ~ 6,
+        T ~ 9)) |> # temporarily made it 9 so I can find lowest value...
+    group_by(season, episode, index, text) |> 
+    summarize(twss = min(twss, na.rm = T),
+              .groups = "drop") |> 
+    mutate(twss = ifelse(twss==9,0,twss)) |> 
+    #filter(twss > 0) |> # this was done to check it
+    count(twss)
+```
+
+```{r}
+p1 <- theoffice |> 
+    filter(str_detect(text, regex("that's what she said", 
+                                  ignore_case = TRUE)))
+p3 <- theoffice |> 
+    filter(str_detect(text, regex("^that's what she", 
+                                  ignore_case = TRUE))) |> 
+    anti_join(p1, by="text")
+
+p4 <- theoffice |> 
+    filter(str_detect(text, regex("what she said", 
+                                  ignore_case = TRUE))) |> 
+    anti_join(p1, by = "text")
+
+p5 <- theoffice |> 
+    filter(str_detect(text, regex("that", ignore_case = TRUE)),
+           str_detect(text, regex("what", ignore_case = TRUE)),
+           str_detect(text, regex("she", ignore_case = TRUE)),
+           str_detect(text, regex("said", ignore_case = TRUE)),
+           !str_detect(text, regex("that's what she said", 
+                                   ignore_case = TRUE))
+           )
+p6 <- twxs |> 
+    filter(str_to_lower(x) %in% c("he", "you", "they", "i")) |> 
+    unite(phrase, w1:w4, sep=" ")
+
+p6_lines <- theoffice |> 
+    filter(text %in% p6$phrase)
+
+theoffice2 <- theoffice |> 
+    mutate(category = case_when(text %in% p1$text ~ 1,
+                                text %in% p3$text ~ 3,
+                                text %in% p4$text ~ 4,
+                                text %in% p5$text ~ 5,
+                                text %in% p6_lines$text ~ 6,
+                                TRUE ~ 0))
+theoffice2 <- theoffice2 |> 
+    mutate(category = as.factor(category))
+theoffice2 |> count(category)
+```
+
+# 8)
+
+```{r}
+#| echo: false
+
+ggplot(theoffice2, aes(x = category)) +
+    geom_bar(fill = "skyblue") +
+    labs(title = "Frequency of TWSS Categories",
+         x = "Category", 
+         y = "Count") +
+    theme_minimal()
+```
+
+```{r}
+#| echo: false
+
+ggplot(theoffice2, aes(x = category)) +
+    geom_bar(fill = "skyblue") +
+    scale_y_log10() +
+    labs(title = "Frequency of TWSS Categories on log scale",
+         x = "Category", 
+         y = "Count log scale") +
+    theme_minimal()
+```
