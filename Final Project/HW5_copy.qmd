@@ -27,6 +27,9 @@ Do the following: (please label each section with the same number as listed here
 7.  Add a categorical variable to the *original* data that takes a value that equals 0 if it was not identified in your work above, 1 if the line says "that's what she said", otherwise it should say 3 if you identified it from starting with "that's what she", otherwise it should say 4 if you identified it from ending with "what she said", otherwise if should say 5 if you identified it in part 5, otherwise it should say 6 if you identified it in part 6. In part 6, you are welcome to make a judgment call about which third words you want to count as similar to "that's what she said" (but you should clearly state which ones you have chosen).
 8.  Create a frequency distribution of the new variable you created in part 7.
 
+
+
+
 ```{r setup, message=FALSE, warning=FALSE}
 #| echo: true
 library(schrute)
@@ -76,6 +79,9 @@ four_words |>
 
 ```
 
+I noticed a few times you would have some code and then some more code below marked as "correct." For question 2, I do not notice a functional difference between the two, so I was curious at that.
+
+
 # 3)
 
 Because of the single occurance of "that's what she sai", I would consider adding that to the count of "that's what she said" because it is either a typo or the character got cutoff. I think it is close enough to be "that's what she said".
@@ -100,6 +106,11 @@ four_words |>
   filter(ngram4 |> str_ends("what she said"),
          !str_detect(text |> str_to_lower(), "that's what she said"))
 ```
+
+
+The code you have labeled as "correct" gives me output of an empty data frame, which confused me.
+
+
 
 # 5)
 
@@ -141,6 +152,11 @@ four_words |>
   count(word3, sort = T)
 ```
 
+I am interested in why your code gave 6 counts of "you" while Dr. Posner's only gave 5. My code was pretty similar to yours and I also got 6. In lines 137 and 140 above, you create a new object (`twxs`) and then immediately overwrite it. It would save time and space to just continue a pipe rather than saving and then rewriting.
+
+
+
+
 ```{r}
 #| echo: false
 ggplot(freq_x, aes(x = reorder(x, n), y = n,)) +
@@ -151,6 +167,9 @@ ggplot(freq_x, aes(x = reorder(x, n), y = n,)) +
          y = "Count") + 
     theme_minimal()
 ```
+
+
+
 
 # 7)
 
@@ -213,6 +232,11 @@ theoffice2 <- theoffice2 |>
 theoffice2 |> count(category)
 ```
 
+I know you said you did not think adding any of the instances from question 5 would be best in context, but this count and the plot below is including all of them. It would not be as generalizable, but you could hard code the line indexes in for this question 7 count, still using the case_when but doing `index %in% c()` and adding the index of the lines for some of the questions with fewer instances. However, this would involve dredging the output from previous questions for the specific indexes.
+
+
+
+
 # 8)
 
 ```{r}
@@ -226,6 +250,9 @@ ggplot(theoffice2, aes(x = category)) +
     theme_minimal()
 ```
 
+
+
+
 ```{r}
 #| echo: false
 
@@ -237,3 +264,7 @@ ggplot(theoffice2, aes(x = category)) +
          y = "Count log scale") +
     theme_minimal()
 ```
+
+
+I like that you tried putting the counts on a log scale since the 0 category is so large. I just adjusted the y-axis so that the 0 column was cut off, but I like the idea of still keeping all that info on screen by using the log.
+
