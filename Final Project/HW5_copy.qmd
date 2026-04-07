@@ -76,7 +76,9 @@ four_words |>
 
 ```
 
-I noticed a few times you would have some code and then some more code below marked as "correct." For question 2, I do not notice a functional difference between the two, so I was curious at that.
+I noticed a few times you would have some code and then some more code below marked as "correct." For question 2, I do not notice a functional difference between the two, so I was curious at that. 
+My answer: when we went over the answers in class, I'd copy
+down what he did and used the comment "correct" as his answer
 
 # 3)
 
@@ -96,14 +98,10 @@ ngram4 |>
 ngram4 |> 
     filter(str_detect(ngram4, "what she said")) |> 
     count(ngram4, sort = TRUE)
-
-# correct
-four_words |> 
-  filter(ngram4 |> str_ends("what she said"),
-         !str_detect(text |> str_to_lower(), "that's what she said"))
 ```
 
 The code you have labeled as "correct" gives me output of an empty data frame, which confused me.
+My response: I was trying to copy down what Dr Posner was doing
 
 # 5)
 
@@ -145,7 +143,8 @@ four_words |>
   count(word3, sort = T)
 ```
 
-I am interested in why your code gave 6 counts of "you" while Dr. Posner's only gave 5. My code was pretty similar to yours and I also got 6. In lines 137 and 140 above, you create a new object (`twxs`) and then immediately overwrite it. It would save time and space to just continue a pipe rather than saving and then rewriting.
+I am interested in why your code gave 6 counts of "you" while Dr. Posner's only gave 5. My code was pretty similar to yours and I also got 6. In lines 137 and 140 above, you create a new object (`twxs`) and then immediately overwrite it. It would save time and space to just continue a pipe rather than saving and then rewriting. 
+My response: I like the idea of piping it to save time. 
 
 ```{r}
 #| echo: false
